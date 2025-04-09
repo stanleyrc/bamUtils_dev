@@ -421,7 +421,7 @@ bamorcram = function(file)
 #' @author Marcin Imielinski
 #' @export
 bam.cov.tile = function(bam.file, window = 1e2, chunksize = 1e5, min.mapq = 30, reference = NULL, verbose = TRUE, max.tlen = 1e4,
-                        st.flag = "-f 0x02 -F 0x10", fragments = TRUE, do.gc = FALSE, midpoint = TRUE, bai = NULL)
+                        st.flag = "-f 0x02 -F 0x10", fragments = TRUE, do.gc = FALSE, midpoint = TRUE, start_coord = FALSE, interchr = FALSE, bai = NULL)
 {
 
   file.type = bamorcram(bam.file)
@@ -442,7 +442,7 @@ bam.cov.tile = function(bam.file, window = 1e2, chunksize = 1e5, min.mapq = 30, 
   {
     sl = seqlengths(BamFile(bam.file))
   }
-  
+
   cmd = 'samtools view %s %s %s -q %s | cut -f "3,4,9"' ## ocmd line to grab the rname, pos, and tlen columns
   
   
@@ -487,6 +487,11 @@ bam.cov.tile = function(bam.file, window = 1e2, chunksize = 1e5, min.mapq = 30, 
                 ## only take midpoints
                 chunk[, bin := 1 + floor((V2 + V3/2)/window)] ## use midpoint of template to index the correct bin
 
+            } else if(!midpoint & start_coord) {
+                if(!interchr) {
+                  chunk = chunk[V3 != 0,]
+                }
+                chunk[, bin := 1 + floor(V2/window)] ## use midpoint of template to index the correct bin
             } else {
                 ## enumerate all bins containing fragment i.e. where fragments overlap multiple bins  (slightly slower)
                 if (verbose){
